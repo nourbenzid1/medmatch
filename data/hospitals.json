@@ -1,0 +1,247 @@
+[
+  {
+    "id": 1,
+    "nom": "Centre Hospitalier de Saint-Quentin",
+    "localisation": "Aisne (02) — Hauts-de-France",
+    "departement": "02",
+    "region": "Hauts-de-France"
+  },
+  {
+    "id": 2,
+    "nom": "Centre Hospitalier de Carcassonne",
+    "localisation": "Aude (11) — Occitanie",
+    "departement": "11",
+    "region": "Occitanie"
+  },
+  {
+    "id": 3,
+    "nom": "Centre Hospitalier de Saint-Affrique",
+    "localisation": "Aveyron (12) — Occitanie",
+    "departement": "12",
+    "region": "Occitanie"
+  },
+  {
+    "id": 4,
+    "nom": "Centre Hospitalier de Bagnols-sur-Cèze (Bagnols-sur-Cèze)",
+    "localisation": "Gard (30) — Occitanie",
+    "departement": "30",
+    "region": "Occitanie"
+  },
+  {
+    "id": 5,
+    "nom": "Centre Hospitalier de Langon / Sud gironde",
+    "localisation": "Gironde (33) — Nouvelle-Aquitaine",
+    "departement": "33",
+    "region": "Nouvelle-Aquitaine"
+  },
+  {
+    "id": 6,
+    "nom": "Centre Hospitalier Pierre Oudot (BOURGOIN JALLIEU)",
+    "localisation": "Isère (38) — Auvergne-Rhône-Alpes",
+    "departement": "38",
+    "region": "Auvergne-Rhône-Alpes"
+  },
+  {
+    "id": 7,
+    "nom": "Centre Hospitalier de Proximité (La Tour-du-Pin)",
+    "localisation": "Isère (38) — Auvergne-Rhône-Alpes",
+    "departement": "38",
+    "region": "Auvergne-Rhône-Alpes"
+  },
+  {
+    "id": 8,
+    "nom": "Centre hospitalier (Pont-de-Beauvoisin) Yves Touraine",
+    "localisation": "Savoie (73) — Auvergne-Rhône-Alpes",
+    "departement": "73",
+    "region": "Auvergne-Rhône-Alpes"
+  },
+  {
+    "id": 9,
+    "nom": "Centre Hospitalier de Dole",
+    "localisation": "ura (39) — Bourgogne-Franche-Comté",
+    "departement": "39",
+    "region": "Bourgogne-Franche-Comté"
+  },
+  {
+    "id": 10,
+    "nom": "Centre Hospitalier de Pontivy",
+    "localisation": "Morbihan (56) — Bretagne",
+    "departement": "56",
+    "region": "Bretagne"
+  },
+  {
+    "id": 11,
+    "nom": "Centre Hospitalier d'Hazebrouck",
+    "localisation": "Nord (59) — Hauts-de-France",
+    "departement": "59",
+    "region": "Hauts-de-France"
+  },
+  {
+    "id": 12,
+    "nom": "Centre Hospitalier Florac",
+    "localisation": "Lozère (48) — Occitanie",
+    "departement": "48",
+    "region": "Occitanie"
+  },
+  {
+    "id": 13,
+    "nom": "Centre Hospitalier Verdun",
+    "localisation": "Meuse (55) — Grand Est",
+    "departement": "55",
+    "region": "Grand Est"
+  },
+  {
+    "id": 14,
+    "nom": "Centre Hospitalier Bar le Duc",
+    "localisation": "Meuse (55) — Grand Est",
+    "departement": "55",
+    "region": "Grand Est"
+  },
+  {
+    "id": 15,
+    "nom": "EPDS Gorze",
+    "localisation": "Moselle (57) — Grand Est",
+    "departement": "57",
+    "region": "Grand Est"
+  },
+  {
+    "id": 16,
+    "nom": "Centre Hospitalier de la Haute-Marne : André Breton (Saint-Dizier)",
+    "localisation": "Haute-Marne (52) — Grand Est",
+    "departement": "52",
+    "region": "Grand Est"
+  },
+  {
+    "id": 17,
+    "nom": "Centre hospitalier de Vitry-le-François",
+    "localisation": "Marne (51) — Grand Est",
+    "departement": "51",
+    "region": "Grand Est"
+  },
+  {
+    "id": 18,
+    "nom": "Centre hospitalier de Saint-Dizier : Site Geneviève de Gaulle",
+    "localisation": "Haute-Marne (52) — Grand Est",
+    "departement": "52",
+    "region": "Grand Est"
+  },
+  {
+    "id": 19,
+    "nom": "ch chaumon",
+    "localisation": "Haute-Marne (52) — Grand Est",
+    "departement": "52",
+    "region": "Grand Est"
+  },
+  {
+    "id": 20,
+    "nom": "ch agen",
+    "localisation": "Lot-et-Garonne (47) — Nouvelle-Aquitaine",
+    "departement": "47",
+    "region": "Nouvelle-Aquitaine"
+  },
+  {
+    "id": 21,
+    "nom": "Centre Hospitalier de Troyes",
+    "localisation": "Aube (10) — Grand Est",
+    "departement": "10",
+    "region": "Grand Est"
+  },
+  {
+    "id": 22,
+    "nom": "Centre Hospitalier Intercommunal de Mont-de-Marsan et Pays des Sources",
+    "localisation": "Landes (40) — Nouvelle-Aquitaine",
+    "departement": "40",
+    "region": "Nouvelle-Aquitaine"
+  },
+  {
+    "id": 23,
+    "nom": "ch sens",
+    "localisation": "Yonne (89) — Bourgogne-Franche-Comté",
+    "departement": "89",
+    "region": "Bourgogne-Franche-Comté"
+  },
+  {
+    "id": 24,
+    "nom": "Centre hospitalier (Rodez)",
+    "localisation": "Aveyron (12) — Occitanie",
+    "departement": "12",
+    "region": "Occitanie"
+  },
+  {
+    "id": 25,
+    "nom": "ch boulay",
+    "localisation": "Moselle (57) — Grand Est",
+    "departement": "57",
+    "region": "Grand Est"
+  },
+  {
+    "id": 26,
+    "nom": "ch avallon",
+    "localisation": "Yonne (89) — Bourgogne-Franche-Comté",
+    "departement": "89",
+    "region": "Bourgogne-Franche-Comté"
+  },
+  {
+    "id": 27,
+    "nom": "CH BELNAY",
+    "localisation": "Nièvre (58) — Bourgogne-Franche-Comté",
+    "departement": "58",
+    "region": "Bourgogne-Franche-Comté"
+  },
+  {
+    "id": 28,
+    "nom": "Établissement Public de Santé Mentale de l'Aube",
+    "localisation": "Aube (10) — Grand Est",
+    "departement": "10",
+    "region": "Grand Est"
+  },
+  {
+    "id": 29,
+    "nom": "Centre hospitalier de Thiers",
+    "localisation": "Puy-de-Dôme (63) — Auvergne-Rhône-Alpes",
+    "departement": "63",
+    "region": "Auvergne-Rhône-Alpes"
+  },
+  {
+    "id": 30,
+    "nom": "EPSMD de l’Aisne",
+    "localisation": "Aisne (02) — Hauts-de-France",
+    "departement": "02",
+    "region": "Hauts-de-France"
+  },
+  {
+    "id": 31,
+    "nom": "Centre hospitalier de Vierzon",
+    "localisation": "Cher (18) — Centre-Val de Loire",
+    "departement": "18",
+    "region": "Centre-Val de Loire"
+  },
+  {
+    "id": 32,
+    "nom": "Centre Départemental Gériatrique de l'Indre",
+    "localisation": "Indre (36) — Centre-Val de Loire",
+    "departement": "36",
+    "region": "Centre-Val de Loire"
+  },
+  {
+    "id": 33,
+    "nom": "Centre Hospitalier de Valençay",
+    "localisation": "Indre (36) — Centre-Val de Loire",
+    "departement": "36",
+    "region": "Centre-Val de Loire"
+  },
+  {
+    "id": 34,
+    "nom": "Centre Hospitalier de Levroux",
+    "localisation": "Indre (36) — Centre-Val de Loire",
+    "departement": "36",
+    "region": "Centre-Val de Loire"
+  },
+  {
+    "id": 35,
+    "nom": "Centre Hospitalier Saint-Nicolas",
+    "localisation": "Meurthe-et-Moselle (54) — Grand Est",
+    "departement": "54",
+    "region": "Grand Est"
+  }
+]
