@@ -353,7 +353,7 @@ h1{color:#60a5fa;margin-bottom:16px;}code{background:#0f172a;padding:4px 10px;bo
 <a href="/docs" style="color:#60a5fa;">Voir la documentation API</a></p>
 </div></body></html>""", encoding="utf-8")
 
-app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+# STATIC_MOUNT_PLACEHOLDER
 
 if __name__ == "__main__":
     import uvicorn
@@ -434,3 +434,5 @@ def sheets_status():
         "last_sync_status": config.get("last_sync_status"),
         "google_library_available": GOOGLE_AVAILABLE,
     }
+
+app.mount('/', StaticFiles(directory=str(static_dir), html=True), name='static')
