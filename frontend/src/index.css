@@ -111,3 +111,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 .alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
 .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
 .alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  aside { width: 60px !important; min-width: 60px !important; }
+  aside span { display: none !important; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+  .card { margin: 6px 0 !important; }
+  h1 { font-size: 18px !important; }
+  table { font-size: 12px; display: block; overflow-x: auto; }
+  .btn { padding: 6px 10px !important; font-size: 12px !important; }
+}
