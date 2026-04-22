@@ -435,4 +435,13 @@ def sheets_status():
         "google_library_available": GOOGLE_AVAILABLE,
     }
 
+from fastapi.responses import FileResponse
+
+@app.get('/{full_path:path}')
+async def serve_spa(full_path: str):
+    f = static_dir / 'index.html'
+    if f.exists(): return FileResponse(str(f))
+    return {'detail': 'Not Found'}
+
 app.mount('/', StaticFiles(directory=str(static_dir), html=True), name='static')
+
