@@ -552,7 +552,8 @@ def sync_all(config: dict) -> dict:
 
     DATA.mkdir(parents=True, exist_ok=True)
 
-    if config.get("doctors_sheet_id"):
+    only = config.get("_only")
+    if (not only or only == "doctors") and config.get("doctors_sheet_id"):
         try:
             doctors = parse_doctors(service, config["doctors_sheet_id"])
             existing = {}
@@ -569,7 +570,7 @@ def sync_all(config: dict) -> dict:
             results["errors"]["doctors"] = str(e)
             results["ok"] = False
 
-    if config.get("hospitals_sheet_id"):
+    if (not only or only == "hospitals") and config.get("hospitals_sheet_id"):
         try:
             hospitals = parse_hospitals(service, config["hospitals_sheet_id"])
             (DATA / "hospitals.json").write_text(json.dumps(hospitals, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -578,7 +579,7 @@ def sync_all(config: dict) -> dict:
             results["errors"]["hospitals"] = str(e)
             results["ok"] = False
 
-    if config.get("offers_sheet_id"):
+    if (not only or only == "offers") and config.get("offers_sheet_id"):
         try:
             offers = parse_offers(service, config["offers_sheet_id"])
             (DATA / "offers.json").write_text(json.dumps(offers, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -588,4 +589,7 @@ def sync_all(config: dict) -> dict:
             results["ok"] = False
 
     return results
+
+
+
 
