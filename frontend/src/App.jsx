@@ -12,7 +12,14 @@ import { statsAPI } from './api'
 import api from './api'
 
 export default function App() {
-  const [sideOpen, setSideOpen] = useState(true)
+  const [sideOpen, setSideOpen] = useState(window.innerWidth > 768)
+  const isMobile = window.innerWidth <= 768
+  useEffect(() => {
+    const handleResize = () => { if (window.innerWidth <= 768) setSideOpen(false) }
+    window.addEventListener('resize', handleResize)
+    handleResize()
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const [stats, setStats] = useState({})
   const [syncStatus, setSyncStatus] = useState(null)
   const [syncing, setSyncing] = useState(false)
@@ -119,3 +126,4 @@ export default function App() {
     </div>
   )
 }
+
