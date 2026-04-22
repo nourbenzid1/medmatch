@@ -1,12 +1,11 @@
 """
 sheets_sync.py — Google Sheets integration for MedMatch
-Reads doctors, hospitals and offers from Google Sheets using a Service Account.
+Reads config from environment variables (Render) or local JSON file.
 """
 
 import json, re, os
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
 
 try:
     from google.oauth2.service_account import Credentials
@@ -20,7 +19,6 @@ CONFIG_FILE = DATA / "sheets_config.json"
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
-# ── Sheet name → specialite mapping (doctors vivier) ──────────────────────────
 SHEET_TO_SPEC = {
     'MED URGENCE':                  "Médecine d'Urgence",
     'MEDECINE GERIATRIE':           'Gériatrie',
@@ -84,8 +82,30 @@ OFFER_SHEET_TO_SPEC = {
 # ── Config helpers ─────────────────────────────────────────────────────────────
 
 def load_config() -> dict:
+    """Load config from environment variables first, then fallback to local file."""
+    # Start with local config file
+    config = _load_config_file()
+
+    # Override with environment variables (used on Render)
+    if os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON"):
+        config["service_account_json"] = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
+    if os.environ.get("DOCTORS_SHEET_ID"):
+        config["doctors_sheet_id"] = os.environ["DOCTORS_SHEET_ID"]
+    if os.environ.get("HOSPITALS_SHEET_ID"):
+        config["hospitals_sheet_id"] = os.environ["HOSPITALS_SHEET_ID"]
+    if os.environ.get("OFFERS_SHEET_ID"):
+        config["offers_sheet_id"] = os.environ["OFFERS_SHEET_ID"]
+
+    return config
+
+
+def _load_config_file() -> dict:
+    """Load config from local JSON file."""
     if CONFIG_FILE.exists():
-        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        try:
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
     return {
         "doctors_sheet_id": "",
         "hospitals_sheet_id": "",
@@ -96,15 +116,19 @@ def load_config() -> dict:
         "last_sync_status": None,
     }
 
+
 def save_config(config: dict):
-    CONFIG_FILE.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    DATA.mkdir(parents=True, exist_ok=True)
+    # Don't save env var values to file
+    safe = {k: v for k, v in config.items() if k != "service_account_json"}
+    CONFIG_FILE.write_text(json.dumps(safe, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 # ── Google Sheets client ───────────────────────────────────────────────────────
 
 def get_sheets_service(service_account_info: dict):
     if not GOOGLE_AVAILABLE:
-        raise RuntimeError("google-auth not installed. Run: pip install google-auth google-api-python-client")
+        raise RuntimeError("google-auth not installed.")
     creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
     return build("sheets", "v4", credentials=creds, cache_discovery=False)
 
@@ -113,7 +137,6 @@ def get_sheet_names(service, spreadsheet_id: str) -> list:
     return [s["properties"]["title"] for s in meta.get("sheets", [])]
 
 def read_sheet(service, spreadsheet_id: str, sheet_name: str) -> list:
-    """Returns list of rows (each row is a list of cell values)."""
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheet_id,
         range=f"'{sheet_name}'"
@@ -132,13 +155,11 @@ def extract_dept(text: str) -> str:
     return m.group(1) if m else ""
 
 def parse_doctors(service, sheet_id: str) -> list:
-    """Parse the Vivier Médical spreadsheet (multi-tab)."""
     doctors = []
     doc_id = 1
     sheet_names = get_sheet_names(service, sheet_id)
 
     for sheet_name in sheet_names:
-        # Match sheet to specialty (strip trailing spaces)
         spec_key = sheet_name.strip().upper()
         spec = None
         for k, v in SHEET_TO_SPEC.items():
@@ -152,7 +173,6 @@ def parse_doctors(service, sheet_id: str) -> list:
         if len(rows) < 2:
             continue
 
-        # Find header row
         header_row = 1
         for i, row in enumerate(rows[:3]):
             row_str = " ".join(str(c).lower() for c in row)
@@ -167,7 +187,6 @@ def parse_doctors(service, sheet_id: str) -> list:
             if not name or name.lower() in ["nom et prénom", "nom", "ouer", "nan"]:
                 continue
 
-            # Handle PARAMED sheet (different column order: email, spec, nom, tel, cp)
             if "PARAMED" in sheet_name.upper():
                 mail = clean(row[0]) if len(row) > 0 else ""
                 name = clean(row[2]) if len(row) > 2 else ""
@@ -183,7 +202,6 @@ def parse_doctors(service, sheet_id: str) -> list:
             if not name:
                 continue
 
-            # Fix Urgence column swap (cp and notes were swapped in original)
             if spec == "Médecine d'Urgence" and re.match(r'^\d{4,6}', notes.strip()):
                 notes, cp = cp, notes
 
@@ -203,38 +221,34 @@ def parse_doctors(service, sheet_id: str) -> list:
 
 
 def parse_hospitals(service, sheet_id: str) -> list:
-    """Parse the établissements conventionnés spreadsheet."""
     hospitals = []
     sheet_names = get_sheet_names(service, sheet_id)
-    sheet_name = sheet_names[0]  # First sheet
-    rows = read_sheet(service, sheet_id, sheet_name)
-
     hop_id = 1
-    for row in rows:
-        if not row or not row[0]:
-            continue
-        name = clean(row[0])
-        loc  = clean(row[1]) if len(row) > 1 else ""
-        if not name or "offre" in name.lower() or "centre hospitalier" not in name.lower() and len(name) < 5:
-            # Skip header / junk rows — keep only actual hospital names
-            if len(name) < 5:
+
+    for sheet_name in sheet_names:
+        rows = read_sheet(service, sheet_id, sheet_name)
+        for row in rows:
+            if not row or not row[0]:
                 continue
-        dept = extract_dept(loc)
-        region = loc.split("—")[-1].strip() if "—" in loc else loc
-        hospitals.append({
-            "id": hop_id,
-            "nom": name.replace("\n", "").strip(),
-            "localisation": loc,
-            "departement": dept,
-            "region": region,
-        })
-        hop_id += 1
+            name = clean(row[0])
+            loc  = clean(row[1]) if len(row) > 1 else ""
+            if not name or len(name) < 3:
+                continue
+            dept = extract_dept(loc)
+            region = loc.split("—")[-1].strip() if "—" in loc else loc
+            hospitals.append({
+                "id": hop_id,
+                "nom": name.replace("\n", "").strip(),
+                "localisation": loc,
+                "departement": dept,
+                "region": region,
+            })
+            hop_id += 1
 
     return hospitals
 
 
 def parse_offers(service, sheet_id: str) -> list:
-    """Parse the OFFRES LASKA spreadsheet (multi-tab)."""
     offers = []
     offer_id = 1
     sheet_names = get_sheet_names(service, sheet_id)
@@ -249,7 +263,6 @@ def parse_offers(service, sheet_id: str) -> list:
                 spec = v
                 break
         if not spec:
-            # Try partial match
             for k, v in OFFER_SHEET_TO_SPEC.items():
                 if k.lower() in sheet_name.lower() or sheet_name.lower() in k.lower():
                     spec = v
@@ -261,7 +274,6 @@ def parse_offers(service, sheet_id: str) -> list:
         if len(rows) < 2:
             continue
 
-        # Find header row
         header_row = 1
         for i, row in enumerate(rows[:3]):
             row_str = " ".join(str(c).lower() for c in row)
@@ -319,12 +331,8 @@ def parse_offers(service, sheet_id: str) -> list:
 # ── Main sync function ─────────────────────────────────────────────────────────
 
 def sync_all(config: dict) -> dict:
-    """
-    Full sync: fetch all 3 sheets and save to data/*.json
-    Returns a status dict with counts and any errors.
-    """
     if not GOOGLE_AVAILABLE:
-        return {"ok": False, "error": "google-auth library not installed. Run: pip install google-auth google-api-python-client"}
+        return {"ok": False, "error": "google-auth library not installed."}
 
     sa_json = config.get("service_account_json")
     if not sa_json:
@@ -335,18 +343,17 @@ def sync_all(config: dict) -> dict:
             sa_info = json.loads(sa_json)
         else:
             sa_info = sa_json
-
         service = get_sheets_service(sa_info)
     except Exception as e:
         return {"ok": False, "error": f"Authentication failed: {str(e)}"}
 
     results = {"ok": True, "synced": {}, "errors": {}, "timestamp": datetime.now().isoformat()}
 
-    # Sync doctors
+    DATA.mkdir(parents=True, exist_ok=True)
+
     if config.get("doctors_sheet_id"):
         try:
             doctors = parse_doctors(service, config["doctors_sheet_id"])
-            # Preserve existing statuses and call history
             existing = {}
             existing_path = DATA / "doctors.json"
             if existing_path.exists():
@@ -361,7 +368,6 @@ def sync_all(config: dict) -> dict:
             results["errors"]["doctors"] = str(e)
             results["ok"] = False
 
-    # Sync hospitals
     if config.get("hospitals_sheet_id"):
         try:
             hospitals = parse_hospitals(service, config["hospitals_sheet_id"])
@@ -371,7 +377,6 @@ def sync_all(config: dict) -> dict:
             results["errors"]["hospitals"] = str(e)
             results["ok"] = False
 
-    # Sync offers
     if config.get("offers_sheet_id"):
         try:
             offers = parse_offers(service, config["offers_sheet_id"])
