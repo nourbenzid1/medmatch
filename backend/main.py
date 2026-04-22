@@ -436,3 +436,4 @@ def sheets_status():
     }
 
 app.mount('/', StaticFiles(directory=str(static_dir), html=True), name='static')
+
