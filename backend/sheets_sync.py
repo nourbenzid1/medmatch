@@ -130,7 +130,7 @@ def get_sheets_service(service_account_info: dict):
     if not GOOGLE_AVAILABLE:
         raise RuntimeError("google-auth not installed.")
     creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-    return build("sheets", "v4", credentials=creds, cache_discovery=False)
+    return build("sheets", "v4", credentials=creds, cache_discovery=False, num_retries=3)
 
 def get_sheet_names(service, spreadsheet_id: str) -> list:
     meta = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -221,29 +221,230 @@ def parse_doctors(service, sheet_id: str) -> list:
 
 
 def parse_hospitals(service, sheet_id: str) -> list:
+    """
+    Parse hospitals from Google Sheets with multiple tab structures.
+    
+    Tab structures:
+    - Hopitaux Publics France: row2=header, col A=prospecteur(ignore), col B=DPT, col C=nom_hopital, col D=nom_contact, col E=tel
+    - Hopitaux Privés et Cliniques: row2=header, col A=prospecteur(ignore), col B=etablissement, col C=nom, col D=tel, col E=email
+    - Centre de santé: same as Hopitaux Privés
+    - Base de donnés FHF: row1=data, col A=region, col B=etablissement, col C=tel, col D=contact
+    - ESPIC: row1=data, col A=prospecteur(ignore), col C=nom_hopital
+    - EHPAD IDF: row1=data, col A=prospecteur(ignore), col B=nom_hopital, col C=adresse, col D=ville, col E=tel
+    - Maisons de retraite: row2=header, col A=prospecteur(ignore), col B=etablissement, col C=tel
+    - A classer: col A=prospecteur(ignore), col B=nom_hopital, col C=contact, col D=tel
+    - Base de donnés ILE DE FRANCE: col A=type, col B=tel, col C=categorie, col D=nom_hopital, col E=statut, col F=adresse
+    """
     hospitals = []
-    sheet_names = get_sheet_names(service, sheet_id)
     hop_id = 1
+    
+    try:
+        sheet_names = get_sheet_names(service, sheet_id)
+    except Exception as e:
+        return hospitals
+
+    # Tabs to skip
+    SKIP_TABS = ['Feuille 14']
 
     for sheet_name in sheet_names:
-        rows = read_sheet(service, sheet_id, sheet_name)
-        for row in rows:
-            if not row or not row[0]:
-                continue
-            name = clean(row[0])
-            loc  = clean(row[1]) if len(row) > 1 else ""
-            if not name or len(name) < 3:
-                continue
-            dept = extract_dept(loc)
-            region = loc.split("—")[-1].strip() if "—" in loc else loc
-            hospitals.append({
-                "id": hop_id,
-                "nom": name.replace("\n", "").strip(),
-                "localisation": loc,
-                "departement": dept,
-                "region": region,
-            })
-            hop_id += 1
+        if sheet_name in SKIP_TABS:
+            continue
+
+        try:
+            rows = read_sheet(service, sheet_id, sheet_name)
+        except Exception:
+            continue
+
+        if not rows:
+            continue
+
+        tab = sheet_name.strip()
+
+        # ── Hopitaux Publics France ──────────────────────────────────────────
+        if 'Hopitaux Publics' in tab or 'Hôpitaux Publics' in tab:
+            for row in rows[2:]:  # Skip rows 1-2 (empty + header)
+                if not row or len(row) < 3:
+                    continue
+                nom = clean(row[2]) if len(row) > 2 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                dept_raw = str(row[1]) if len(row) > 1 and row[1] else ""
+                tel = clean(row[4]) if len(row) > 4 else ""
+                contact = clean(row[3]) if len(row) > 3 else ""
+                dept = dept_raw.strip() if dept_raw else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": f"Département {dept}" if dept else "",
+                    "departement": dept,
+                    "region": "France",
+                    "telephone": tel,
+                    "contact": contact,
+                    "type": "Hôpital Public",
+                })
+                hop_id += 1
+
+        # ── Hopitaux Privés / Centre de santé ─────────────────────────────────
+        elif 'Priv' in tab or 'Centre de sant' in tab:
+            for row in rows[2:]:  # Skip rows 1-2
+                if not row or len(row) < 2:
+                    continue
+                nom = clean(row[1]) if len(row) > 1 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                tel = clean(row[3]) if len(row) > 3 else ""
+                contact = clean(row[2]) if len(row) > 2 else ""
+                email = clean(row[4]) if len(row) > 4 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": "",
+                    "departement": "",
+                    "region": "Île-de-France",
+                    "telephone": tel,
+                    "contact": contact,
+                    "email": email,
+                    "type": "Clinique Privée" if "Priv" in tab else "Centre de Santé",
+                })
+                hop_id += 1
+
+        # ── Base de donnés FHF ───────────────────────────────────────────────
+        elif 'FHF' in tab:
+            for row in rows:
+                if not row or len(row) < 2:
+                    continue
+                region = clean(row[0]) if row[0] else ""
+                nom = clean(row[1]) if len(row) > 1 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                tel_raw = row[2] if len(row) > 2 else ""
+                tel = str(int(tel_raw)) if isinstance(tel_raw, float) else clean(str(tel_raw)) if tel_raw else ""
+                contact = clean(row[3]) if len(row) > 3 else ""
+                email = clean(row[6]) if len(row) > 6 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": region,
+                    "departement": "",
+                    "region": region,
+                    "telephone": tel,
+                    "contact": contact,
+                    "email": email,
+                    "type": "Hôpital Public (FHF)",
+                })
+                hop_id += 1
+
+        # ── ESPIC ────────────────────────────────────────────────────────────
+        elif 'ESPIC' in tab:
+            for row in rows:
+                if not row or len(row) < 3:
+                    continue
+                nom = clean(row[2]) if len(row) > 2 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                contact = clean(row[3]) if len(row) > 3 else ""
+                email = clean(row[5]) if len(row) > 5 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": "",
+                    "departement": "",
+                    "region": "France",
+                    "telephone": "",
+                    "contact": contact,
+                    "email": email,
+                    "type": "ESPIC",
+                })
+                hop_id += 1
+
+        # ── EHPAD IDF ────────────────────────────────────────────────────────
+        elif 'EHPAD' in tab:
+            for row in rows:
+                if not row or len(row) < 2:
+                    continue
+                nom = clean(row[1]) if len(row) > 1 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                adresse = clean(row[2]) if len(row) > 2 else ""
+                ville = clean(row[3]) if len(row) > 3 else ""
+                tel = clean(row[4]) if len(row) > 4 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": f"{adresse}, {ville}".strip(", "),
+                    "departement": "75" if "Paris" in ville else "",
+                    "region": "Île-de-France",
+                    "telephone": tel,
+                    "contact": "",
+                    "type": "EHPAD",
+                })
+                hop_id += 1
+
+        # ── Maisons de retraite ───────────────────────────────────────────────
+        elif 'Maisons' in tab or 'retraite' in tab.lower():
+            for row in rows[1:]:  # Skip header row
+                if not row or len(row) < 2:
+                    continue
+                nom = clean(row[1]) if len(row) > 1 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                tel = clean(row[2]) if len(row) > 2 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": "",
+                    "departement": "",
+                    "region": "Île-de-France",
+                    "telephone": tel,
+                    "contact": "",
+                    "type": "Maison de Retraite",
+                })
+                hop_id += 1
+
+        # ── A classer / autres ────────────────────────────────────────────────
+        elif 'classer' in tab.lower():
+            for row in rows:
+                if not row or len(row) < 2:
+                    continue
+                nom = clean(row[1]) if len(row) > 1 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                contact = clean(row[2]) if len(row) > 2 else ""
+                tel = clean(row[3]) if len(row) > 3 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": "",
+                    "departement": "",
+                    "region": "France",
+                    "telephone": tel,
+                    "contact": contact,
+                    "type": "Établissement",
+                })
+                hop_id += 1
+
+        # ── Base ILE DE FRANCE ────────────────────────────────────────────────
+        elif 'ILE DE FRANCE' in tab.upper() or 'IDF' in tab.upper():
+            for row in rows:
+                if not row or len(row) < 4:
+                    continue
+                nom = clean(row[3]) if len(row) > 3 else ""
+                if not nom or len(nom) < 3:
+                    continue
+                tel_raw = row[1] if len(row) > 1 else ""
+                tel = str(int(tel_raw)) if isinstance(tel_raw, float) else clean(str(tel_raw)) if tel_raw else ""
+                adresse = clean(row[5]) if len(row) > 5 else ""
+                hospitals.append({
+                    "id": hop_id,
+                    "nom": nom,
+                    "localisation": adresse,
+                    "departement": "",
+                    "region": "Île-de-France",
+                    "telephone": tel,
+                    "contact": "",
+                    "type": clean(row[0]) if row[0] else "Établissement",
+                })
+                hop_id += 1
 
     return hospitals
 
@@ -387,3 +588,4 @@ def sync_all(config: dict) -> dict:
             results["ok"] = False
 
     return results
+
