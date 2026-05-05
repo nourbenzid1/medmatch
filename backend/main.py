@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+﻿from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import json, re, os
 
-app = FastAPI(title="MedMatch — Laska Corporate Medical", version="2.0.0")
+app = FastAPI(title="MedMatch â€” Laska Corporate Medical", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # Support custom data dir via env var (used by Electron)
@@ -113,7 +113,7 @@ def score_doctor(doctor: dict, offer: dict, calls: list) -> dict:
     doc_calls = [c for c in calls if c.get("doctor_id") == doctor.get("id")]
     if doc_calls:
         last = sorted(doc_calls, key=lambda x: x.get("created_at", ""))[-1]
-        if last["statut"] == "pas_interessé":
+        if last["statut"] == "pas_interessÃ©":
             score -= 40
             warnings.append("Precedemment pas interesse")
         elif last["statut"] == "place":
@@ -212,7 +212,7 @@ def offer_specialites():
     c=Counter(o["specialite"] for o in offers_db)
     return [{"specialite":s,"count":n} for s,n in c.most_common()]
 
-# ── MATCHING ────────────────────────────────────────────────────────────────
+# â”€â”€ MATCHING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/match/offer/{offer_id}")
 def match_offer(offer_id: int, limit: int=50):
     offer = next((o for o in offers_db if o["id"]==offer_id), None)
@@ -258,7 +258,7 @@ def match_overview(specialite: Optional[str]=None):
     results.sort(key=lambda x:x["potential_doctors"],reverse=True)
     return {"total":len(results),"results":results}
 
-# ── CALLS ───────────────────────────────────────────────────────────────────
+# â”€â”€ CALLS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/calls")
 def get_calls(doctor_id: Optional[int]=None, offer_id: Optional[int]=None,
               statut: Optional[str]=None, limit: int=500):
@@ -271,10 +271,10 @@ def get_calls(doctor_id: Optional[int]=None, offer_id: Optional[int]=None,
         doc  =next((d for d in doctors_db if d["id"]==c.get("doctor_id")),{})
         offer=next((o for o in offers_db  if o["id"]==c.get("offer_id")),None)
         enriched.append({**c,
-            "doctor_nom":doc.get("nom","—"),"doctor_tel":doc.get("tel",""),
+            "doctor_nom":doc.get("nom","â€”"),"doctor_tel":doc.get("tel",""),
             "doctor_mail":doc.get("mail",""),"doctor_specialite":doc.get("specialite",""),
-            "offer_ref":offer.get("ref","—") if offer else "—",
-            "offer_titre":offer.get("titre","—") if offer else "—",
+            "offer_ref":offer.get("ref","â€”") if offer else "â€”",
+            "offer_titre":offer.get("titre","â€”") if offer else "â€”",
             "offer_localisation":offer.get("localisation","") if offer else "",
         })
     return {"total":len(enriched),"calls":enriched}
@@ -314,7 +314,7 @@ def get_stats():
         "recent_calls":sorted(calls_db,key=lambda x:x.get("created_at",""),reverse=True)[:10],
     }
 
-# ── Network info endpoint ──────────────────────────────────────────────────────
+# â”€â”€ Network info endpoint â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import socket
 
 @app.get("/api/network")
@@ -334,7 +334,7 @@ def get_network_info():
         "local_url": "http://localhost:8000"
     }
 
-# ── Serve built frontend ────────────────────────────────────────────────────────
+# â”€â”€ Serve built frontend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Frontend is built into backend/static via: npm run build
 static_dir = Path(__file__).parent / "static"
 if not static_dir.exists():
@@ -346,7 +346,7 @@ if not static_dir.exists():
 .box{text-align:center;padding:40px;background:#1e293b;border-radius:16px;max-width:500px;}
 h1{color:#60a5fa;margin-bottom:16px;}code{background:#0f172a;padding:4px 10px;border-radius:6px;font-size:14px;}
 </style></head><body><div class="box">
-<h1>MedMatch</h1><p>Le frontend n'a pas encore été compilé.</p>
+<h1>MedMatch</h1><p>Le frontend n'a pas encore Ã©tÃ© compilÃ©.</p>
 <p>Dans le dossier <code>frontend</code>, lancez :<br><br>
 <code>npm install</code><br><code>npm run build</code></p>
 <p style="margin-top:20px;font-size:13px;color:#64748b;">L'API backend tourne correctement.<br>
@@ -360,9 +360,9 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # GOOGLE SHEETS SYNC
-# ══════════════════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 from sheets_sync import load_config, save_config, sync_all, GOOGLE_AVAILABLE
 
 class SheetsConfig(BaseModel):
@@ -435,7 +435,16 @@ def sheets_status():
         "google_library_available": GOOGLE_AVAILABLE,
     }
 
+@app.get('/{full_path:path}')
+async def serve_spa(full_path: str):
+    from fastapi.responses import FileResponse
+    index = static_dir / 'index.html'
+    if index.exists():
+        return FileResponse(str(index))
+    return {'detail': 'Not Found'}
+
 app.mount('/', StaticFiles(directory=str(static_dir), html=True), name='static')
+
 
 
 
